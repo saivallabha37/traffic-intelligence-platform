@@ -91,7 +91,7 @@ class TrafficGraph {
    * multiplier: low=1, medium=1.6, high=2.5
    */
   setTraffic(from, to, level) {
-    const multiplier = { low: 1.0, medium: 1.6, high: 2.5 };
+    const multiplier = { low: 1.0, medium: 2.2, high: 4.0 };
     const m = multiplier[level] || 1.0;
 
     const updateEdge = (src, dst) => {
@@ -125,11 +125,13 @@ class TrafficGraph {
   }
 
   /**
-   * Dijkstra's Algorithm
+   * A* Algorithm (Dijkstra + Euclidean heuristic)
    * useTraffic: if true, uses currentWeight; else uses baseWeight
+   * blockedNodes: optional Set of node ids to avoid while routing
+   * destination: if provided, use A* with Euclidean heuristic; else fall back to Dijkstra
    * @returns { distances, previous, visited }
    */
-  dijkstra(source, useTraffic = false) {
+  dijkstra(source, useTraffic = false, blockedNodes = new Set(), destination = null) {
     const distances = new Map();
     const previous = new Map();
     const visited = new Set();
@@ -141,27 +143,88 @@ class TrafficGraph {
       previous.set(id, null);
     }
     distances.set(source, 0);
-    pq.enqueue(source, 0);
+
+    // Use A* if destination is provided, else standard Dijkstra
+    const useAStar = destination !== null && this.nodes.has(destination);
+    const heuristic = (nodeId) => {
+      if (!useAStar) return 0;
+      const from = this.nodes.get(nodeId);
+      const to = this.nodes.get(destination);
+      if (!from || !to) return 0;
+      const dx = to.x - from.x;
+      const dy = to.y - from.y;
+      return Math.sqrt(dx * dx + dy * dy);
+    };
+
+    pq.enqueue(source, 0 + heuristic(source));
 
     while (!pq.isEmpty()) {
       const { node: current } = pq.dequeue();
       if (visited.has(current)) continue;
       visited.add(current);
 
+      // Early termination for A*
+      if (useAStar && current === destination) break;
+
       const neighbors = this.adjacency.get(current) || [];
       for (const edge of neighbors) {
+        if (blockedNodes.has(edge.to) && edge.to !== source) continue;
         if (visited.has(edge.to)) continue;
         const weight = useTraffic ? edge.currentWeight : edge.baseWeight;
         const newDist = distances.get(current) + weight;
         if (newDist < distances.get(edge.to)) {
           distances.set(edge.to, newDist);
           previous.set(edge.to, current);
-          pq.enqueue(edge.to, newDist);
+          pq.enqueue(edge.to, newDist + heuristic(edge.to));
         }
       }
     }
 
     return { distances, previous, visited };
+  }
+
+  /**
+   * Recompute the remaining route after every hop.
+   * This models live rerouting after reaching each intersection.
+   */
+  getAdaptiveRoute(source, destination, useTraffic = false) {
+    const route = [source];
+    let totalCost = 0;
+    let current = source;
+    const safetyLimit = this.nodes.size + 1;
+    const blocked = new Set();
+
+    for (let i = 0; i < safetyLimit && current !== destination; i++) {
+      const { distances, previous } = this.dijkstra(current, useTraffic, blocked, destination);
+      if (!Number.isFinite(distances.get(destination))) {
+        return { path: [], cost: Infinity, reroutes: route.length - 1 };
+      }
+
+      const segment = this.getPath(previous, current, destination);
+      if (segment.length < 2) {
+        return { path: [], cost: Infinity, reroutes: route.length - 1 };
+      }
+
+      const nextHop = segment[1];
+      const edge = this.getEdge(current, nextHop);
+      if (!edge) {
+        return { path: [], cost: Infinity, reroutes: route.length - 1 };
+      }
+
+      totalCost += useTraffic ? edge.currentWeight : edge.baseWeight;
+      route.push(nextHop);
+
+      if (nextHop !== destination) {
+        blocked.add(current);
+      }
+      current = nextHop;
+    }
+
+    if (current !== destination) {
+      return { path: [], cost: Infinity, reroutes: route.length - 1 };
+    }
+
+    return { path: route, cost: totalCost, reroutes: route.length - 1 };
   }
 
   /**

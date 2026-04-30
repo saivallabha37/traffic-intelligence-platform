@@ -112,6 +112,9 @@
         <button class="btn-primary" id="findRouteBtn">
           <span>⚡ Find Optimal Route</span>
         </button>
+        <button class="btn-primary btn-travel" id="travelModeBtn">
+          <span>🚗 Start Travel Mode</span>
+        </button>
         <button class="btn-secondary" id="randomTrafficBtn">
           <span>🎲 Randomize Traffic</span>
         </button>
@@ -244,6 +247,15 @@
             <div class="savings-value" id="savingsValue">—</div>
           </div>
           <div class="savings-pct" id="savingsPct">—</div>
+        </div>
+
+        <!-- Live Travel -->
+        <div class="travel-card hidden" id="liveTravelCard">
+          <div class="steps-title">🚗 Live Travel Mode</div>
+          <div class="travel-row"><span>Current Node</span><strong id="travelCurrentNode">—</strong></div>
+          <div class="travel-row"><span>Next Hop</span><strong id="travelNextHop">—</strong></div>
+          <div class="travel-row"><span>Remaining Route</span><strong id="travelRemainingRoute">—</strong></div>
+          <div class="travel-row"><span>Visited</span><strong id="travelVisitedRoute">—</strong></div>
         </div>
 
         <!-- Path Steps -->

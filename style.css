@@ -3,28 +3,28 @@
    ============================================ */
 
 :root {
-  --bg-primary: #060b14;
-  --bg-secondary: #0d1525;
-  --bg-card: rgba(13, 21, 37, 0.8);
-  --bg-glass: rgba(255, 255, 255, 0.04);
-  --border: rgba(255, 255, 255, 0.08);
-  --border-hover: rgba(255, 255, 255, 0.15);
-  --text-primary: #e8f4fd;
-  --text-secondary: #8ba4c0;
-  --text-muted: #4a6080;
-  --accent-blue: #63b3ed;
-  --accent-purple: #b794f4;
-  --accent-cyan: #76e4f7;
-  --accent-orange: #f6ad55;
-  --color-low: #48bb78;
-  --color-med: #f6ad55;
-  --color-high: #fc8181;
-  --color-path: #63b3ed;
+  --bg-primary: linear-gradient(135deg, #f5dcc8 0%, #ead0c0 100%);
+  --bg-secondary: #f0e0d5;
+  --bg-card: rgba(255, 248, 240, 0.85);
+  --bg-glass: rgba(255, 248, 240, 0.6);
+  --border: rgba(200, 180, 165, 0.15);
+  --border-hover: rgba(200, 180, 165, 0.3);
+  --text-primary: #2d2620;
+  --text-secondary: #6b6158;
+  --text-muted: #9b8f83;
+  --accent-blue: #6ba3d4;
+  --accent-purple: #b88ec7;
+  --accent-cyan: #7eccc8;
+  --accent-orange: #d99d5c;
+  --color-low: #5eb86e;
+  --color-med: #f5a962;
+  --color-high: #e87373;
+  --color-path: #6ba3d4;
   --radius-sm: 8px;
   --radius-md: 14px;
   --radius-lg: 20px;
-  --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.4);
-  --shadow-glow: 0 0 20px rgba(99, 179, 237, 0.2);
+  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.08);
+  --shadow-glow: 0 0 20px rgba(107, 163, 212, 0.15);
 }
 
 *,
@@ -102,10 +102,11 @@ body {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(6, 11, 20, 0.85);
+  background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border);
   padding: 0 2rem;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
 }
 
 .header-inner {
@@ -138,7 +139,7 @@ body {
 .logo-title {
   font-family: 'Space Grotesk', sans-serif;
   font-size: 1.25rem;
-  font-weight: 700;
+  font-weight: 700;#d99d5c, #b88ec7
   background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -168,15 +169,15 @@ body {
 }
 
 .badge-algo {
-  background: rgba(99, 179, 237, 0.12);
+  background: rgba(107, 163, 212, 0.12);
   color: var(--accent-blue);
-  border: 1px solid rgba(99, 179, 237, 0.25);
+  border: 1px solid rgba(107, 163, 212, 0.3);
 }
 
 .badge-ds {
-  background: rgba(183, 148, 244, 0.12);
+  background: rgba(184, 142, 199, 0.12);
   color: var(--accent-purple);
-  border: 1px solid rgba(183, 148, 244, 0.25);
+  border: 1px solid rgba(184, 142, 199, 0.3);
 }
 
 .status-dot {
@@ -211,7 +212,8 @@ body {
 /* ===== MAIN LAYOUT ===== */
 .main-layout {
   display: grid;
-  grid-template-columns: 300px 1fr 320px;
+  grid-template-columns: 300px 1fr;
+  grid-template-rows: auto auto;
   gap: 1.5rem;
   padding: 1.5rem;
   max-width: 1600px;
@@ -287,7 +289,7 @@ body {
   cursor: pointer;
   transition: all 0.2s ease;
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238ba4c0' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23999' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 12px center;
   padding-right: 36px;
@@ -300,7 +302,8 @@ body {
 }
 
 .select-input option {
-  background: #0d1525;
+  background: #f5f3f0;
+  color: #2d2620;
 }
 
 /* Traffic Buttons */
@@ -334,31 +337,31 @@ body {
 }
 
 .traffic-btn.low.active {
-  background: rgba(72, 187, 120, 0.12);
-  border-color: rgba(72, 187, 120, 0.4);
+  background: rgba(94, 184, 110, 0.15);
+  border-color: rgba(94, 184, 110, 0.4);
   color: var(--color-low);
-  box-shadow: 0 0 12px rgba(72, 187, 120, 0.15);
+  box-shadow: 0 0 12px rgba(94, 184, 110, 0.2);
 }
 
 .traffic-btn.medium.active {
-  background: rgba(246, 173, 85, 0.12);
-  border-color: rgba(246, 173, 85, 0.4);
+  background: rgba(245, 169, 98, 0.15);
+  border-color: rgba(245, 169, 98, 0.4);
   color: var(--color-med);
-  box-shadow: 0 0 12px rgba(246, 173, 85, 0.15);
+  box-shadow: 0 0 12px rgba(245, 169, 98, 0.2);
 }
 
 .traffic-btn.high.active {
-  background: rgba(252, 129, 129, 0.12);
-  border-color: rgba(252, 129, 129, 0.4);
+  background: rgba(232, 115, 115, 0.15);
+  border-color: rgba(232, 115, 115, 0.4);
   color: var(--color-high);
-  box-shadow: 0 0 12px rgba(252, 129, 129, 0.15);
+  box-shadow: 0 0 12px rgba(232, 115, 115, 0.2);
 }
 
 /* Buttons */
 .btn-primary {
   width: 100%;
   padding: 12px;
-  background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+  background: linear-gradient(135deg, #6ba3d4, #b88ec7);
   border: none;
   border-radius: var(--radius-sm);
   color: white;
@@ -371,6 +374,7 @@ body {
   letter-spacing: 0.01em;
   position: relative;
   overflow: hidden;
+  box-shadow: 0 4px 15px rgba(107, 163, 212, 0.25);
 }
 
 .btn-primary::before {
@@ -384,7 +388,7 @@ body {
 
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(99, 179, 237, 0.4);
+  box-shadow: 0 8px 24px rgba(107, 163, 212, 0.35);
 }
 
 .btn-primary:hover::before {
@@ -395,11 +399,29 @@ body {
   transform: translateY(0);
 }
 
+.btn-travel {
+  margin-bottom: 8px;
+  background: linear-gradient(135deg, rgba(94, 184, 110, 0.18), rgba(107, 163, 212, 0.18));
+  border: 1px solid rgba(94, 184, 110, 0.32);
+}
+
+.btn-travel:hover {
+  box-shadow: 0 8px 24px rgba(94, 184, 110, 0.25);
+}
+
+.btn-primary:disabled,
+.btn-secondary:disabled,
+.btn-ghost:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  transform: none;
+}
+
 .btn-secondary {
   width: 100%;
   padding: 10px;
-  background: rgba(246, 173, 85, 0.1);
-  border: 1px solid rgba(246, 173, 85, 0.25);
+  background: rgba(217, 157, 92, 0.12);
+  border: 1px solid rgba(217, 157, 92, 0.3);
   border-radius: var(--radius-sm);
   color: var(--color-med);
   font-size: 0.8rem;
@@ -411,7 +433,7 @@ body {
 }
 
 .btn-secondary:hover {
-  background: rgba(246, 173, 85, 0.18);
+  background: rgba(217, 157, 92, 0.2);
   transform: translateY(-1px);
 }
 
@@ -467,18 +489,18 @@ body {
 }
 
 .dot-source {
-  background: #f6ad55;
-  box-shadow: 0 0 8px #f6ad55;
+  background: #d99d5c;
+  box-shadow: 0 0 8px #d99d5c;
 }
 
 .dot-dest {
-  background: #fc8181;
-  box-shadow: 0 0 8px #fc8181;
+  background: #e87373;
+  box-shadow: 0 0 8px #e87373;
 }
 
 .dot-path {
-  background: #63b3ed;
-  box-shadow: 0 0 8px #63b3ed;
+  background: #6ba3d4;
+  box-shadow: 0 0 8px #6ba3d4;
 }
 
 .legend-line {
@@ -489,15 +511,15 @@ body {
 }
 
 .line-low {
-  background: #48bb78;
+  background: #5eb86e;
 }
 
 .line-med {
-  background: #f6ad55;
+  background: #f5a962;
 }
 
 .line-high {
-  background: #fc8181;
+  background: #e87373;
 }
 
 /* ===== GRAPH PANEL ===== */
@@ -667,6 +689,7 @@ body {
 
 /* ===== RESULTS PANEL ===== */
 .results-panel {
+  grid-column: 1 / -1;
   overflow-y: auto;
 }
 
@@ -812,6 +835,49 @@ body {
   font-weight: 800;
   color: var(--color-low);
   font-family: 'Space Grotesk', sans-serif;
+}
+
+/* Live Travel Mode */
+.travel-card {
+  margin-top: 1rem;
+  padding: 1.5rem;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(94, 184, 110, 0.25);
+  background: linear-gradient(180deg, rgba(94, 184, 110, 0.1), rgba(107, 163, 212, 0.08));
+}
+
+.travel-row {
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  margin-bottom: 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(94, 184, 110, 0.15);
+}
+
+.travel-row:last-child {
+  margin-bottom: 0;
+}
+
+.travel-row span {
+  display: block;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 10px;
+  opacity: 0.8;
+}
+
+.travel-row strong {
+  display: block;
+  color: var(--text-primary);
+  font-weight: 700;
+  font-size: 1.1rem;
+  word-break: break-word;
+  letter-spacing: 0.02em;
 }
 
 .savings-card.extra .savings-pct {

@@ -16,6 +16,8 @@ let panStartX = 0;
 let panStartY = 0;
 let currentTrafficLevel = 'low';
 let lastResult = null;
+let travelRunId = 0;
+let travelInProgress = false;
 
 const SVG_W = 800;
 const SVG_H = 550;
@@ -26,6 +28,7 @@ const SVG_H = 550;
 const sourceSelect = document.getElementById('sourceSelect');
 const destSelect = document.getElementById('destSelect');
 const findRouteBtn = document.getElementById('findRouteBtn');
+const travelModeBtn = document.getElementById('travelModeBtn');
 const randomTrafficBtn = document.getElementById('randomTrafficBtn');
 const resetBtn = document.getElementById('resetBtn');
 const svg = document.getElementById('graphSvg');
@@ -37,6 +40,11 @@ const pathOverlayGroup = document.getElementById('pathOverlayGroup');
 const canvasHint = document.getElementById('canvasHint');
 const resultsEmpty = document.getElementById('resultsEmpty');
 const resultsContent = document.getElementById('resultsContent');
+const liveTravelCard = document.getElementById('liveTravelCard');
+const travelCurrentNode = document.getElementById('travelCurrentNode');
+const travelNextHop = document.getElementById('travelNextHop');
+const travelRemainingRoute = document.getElementById('travelRemainingRoute');
+const travelVisitedRoute = document.getElementById('travelVisitedRoute');
 
 // ─────────────────────────────────────────────────
 //  Init
@@ -335,23 +343,148 @@ function findRoute() {
     const basePath = graph.getPath(base.previous, src, dst);
     const baseCost = base.distances.get(dst);
 
-    // Apply current traffic level to edges and run again
-    const trafficResult = graph.dijkstra(src, true);
-    const trafficPath = graph.getPath(trafficResult.previous, src, dst);
-    const trafficCost = trafficResult.distances.get(dst);
+    // Recompute from the current node at every hop so the route can reroute
+    // if traffic changes while traveling.
+    const trafficResult = graph.getAdaptiveRoute(src, dst, true);
+    const trafficPath = trafficResult.path;
+    const trafficCost = trafficResult.cost;
 
     if (basePath.length === 0 || baseCost === Infinity) {
         showToast('❌ No path found between these nodes!');
         return;
     }
 
-    lastResult = { src, dst, basePath, baseCost, trafficPath, trafficCost };
+    if (trafficPath.length === 0 || trafficCost === Infinity) {
+        showToast('❌ No traffic-aware route found!');
+        return;
+    }
+
+    lastResult = { src, dst, basePath, baseCost, trafficPath, trafficCost, reroutes: trafficResult.reroutes };
     canvasHint.classList.add('hidden');
 
     // Render the optimal (traffic-aware) path
     renderGraph(trafficPath, src, dst);
     showResults(lastResult);
     showToast(`✅ Optimal path found! ${trafficPath.join(' → ')}`);
+}
+
+function setTravelStatus({ currentNode, nextHop = '—', remainingRoute = [], visitedRoute = [] }) {
+    liveTravelCard.classList.remove('hidden');
+    travelCurrentNode.textContent = currentNode || '—';
+    travelNextHop.textContent = nextHop || '—';
+    travelRemainingRoute.textContent = remainingRoute.length ? remainingRoute.join(' → ') : '—';
+    travelVisitedRoute.textContent = visitedRoute.length ? visitedRoute.join(' → ') : '—';
+}
+
+function clearTravelStatus() {
+    liveTravelCard.classList.add('hidden');
+    travelCurrentNode.textContent = '—';
+    travelNextHop.textContent = '—';
+    travelRemainingRoute.textContent = '—';
+    travelVisitedRoute.textContent = '—';
+}
+
+async function startTravelMode() {
+    if (travelInProgress) return;
+
+    const src = sourceSelect.value;
+    const dst = destSelect.value;
+
+    if (!src || !dst) {
+        showToast('⚠️ Please select source and destination!');
+        return;
+    }
+    if (src === dst) {
+        showToast('⚠️ Source and destination must be different!');
+        return;
+    }
+
+    const base = graph.dijkstra(src, false);
+    const basePath = graph.getPath(base.previous, src, dst);
+    const baseCost = base.distances.get(dst);
+    if (basePath.length === 0 || baseCost === Infinity) {
+        showToast('❌ No path found between these nodes!');
+        return;
+    }
+
+    travelInProgress = true;
+    const runId = ++travelRunId;
+    travelModeBtn.disabled = true;
+    findRouteBtn.disabled = true;
+    randomTrafficBtn.disabled = true;
+    resetBtn.disabled = true;
+
+    canvasHint.classList.add('hidden');
+    resultsEmpty.classList.add('hidden');
+    resultsContent.classList.remove('hidden');
+
+    const traveled = [src];
+    let current = src;
+    let totalCost = 0;
+
+    try {
+        lastResult = { src, dst, basePath, baseCost, trafficPath: basePath, trafficCost: baseCost };
+        renderGraph([src], src, dst);
+        showResults(lastResult);
+        setTravelStatus({ currentNode: src, nextHop: '—', remainingRoute: [src, dst], visitedRoute: [src] });
+        showToast('🚗 Travel mode started');
+
+        while (runId === travelRunId && current !== dst) {
+            const adaptive = graph.getAdaptiveRoute(current, dst, true);
+            const remaining = adaptive.path;
+            if (remaining.length < 2) {
+                showToast('❌ Route became unavailable while traveling!');
+                break;
+            }
+
+            const nextHop = remaining[1];
+            const edge = graph.getEdge(current, nextHop);
+            if (!edge) {
+                showToast('❌ Missing road segment on the live route!');
+                break;
+            }
+
+            const livePlan = [...traveled, ...remaining.slice(1)];
+            setTravelStatus({
+                currentNode: current,
+                nextHop,
+                remainingRoute: livePlan,
+                visitedRoute: traveled,
+            });
+            renderGraph(traveled, src, dst);
+            await new Promise(resolve => setTimeout(resolve, 650));
+            if (runId !== travelRunId) break;
+
+            totalCost += edge.currentWeight;
+            traveled.push(nextHop);
+            current = nextHop;
+
+            const updatedRemaining = current === dst ? [dst] : graph.getAdaptiveRoute(current, dst, true).path;
+            const currentPlan = [...traveled, ...updatedRemaining.slice(1)];
+            lastResult.trafficPath = currentPlan;
+            lastResult.trafficCost = current === dst ? totalCost : totalCost + graph.getAdaptiveRoute(current, dst, true).cost;
+            renderGraph(traveled, src, dst);
+            showResults({ ...lastResult, trafficPath: currentPlan, trafficCost: lastResult.trafficCost });
+            setTravelStatus({
+                currentNode: current,
+                nextHop: current === dst ? 'Arrived' : 'Re-routing...',
+                remainingRoute: currentPlan,
+                visitedRoute: traveled,
+            });
+        }
+
+        if (runId === travelRunId && current === dst) {
+            showToast(`🏁 Arrived at ${dst} via ${traveled.join(' → ')}`);
+        }
+    } finally {
+        if (runId === travelRunId) {
+            travelInProgress = false;
+            travelModeBtn.disabled = false;
+            findRouteBtn.disabled = false;
+            randomTrafficBtn.disabled = false;
+            resetBtn.disabled = false;
+        }
+    }
 }
 
 // ─────────────────────────────────────────────────
@@ -444,11 +577,12 @@ function showResults({ src, dst, basePath, baseCost, trafficPath, trafficCost })
 function recomputeAndRender() {
     if (lastResult) {
         const src = lastResult.src, dst = lastResult.dst;
-        const trafficResult = graph.dijkstra(src, true);
-        const trafficPath = graph.getPath(trafficResult.previous, src, dst);
-        const trafficCost = trafficResult.distances.get(dst);
+        const trafficResult = graph.getAdaptiveRoute(src, dst, true);
+        const trafficPath = trafficResult.path;
+        const trafficCost = trafficResult.cost;
         lastResult.trafficPath = trafficPath;
         lastResult.trafficCost = trafficCost;
+        lastResult.reroutes = trafficResult.reroutes;
         renderGraph(trafficPath, src, dst);
         showResults(lastResult);
     } else {
@@ -457,27 +591,26 @@ function recomputeAndRender() {
 }
 
 /**
- * Sample a traffic level according to a probability distribution biased
- * toward the target level. This ensures edges get DIFFERENT levels so
- * Dijkstra finds genuinely alternate paths instead of the same scaled path.
+ * Sample a traffic level with higher variance toward extremes.
+ * This creates more dramatic route changes based on traffic conditions.
  *
- *  Low    →  70% low,  20% medium,  10% high
- *  Medium →  20% low,  50% medium,  30% high
- *  High   →   5% low,  25% medium,  70% high
+ *  Low    →  60% low,  15% medium,  25% high
+ *  Medium →  10% low,  40% medium,  50% high
+ *  High   →   5% low,  15% medium,  80% high
  */
 function sampleTrafficLevel(target) {
     const rand = Math.random();
     if (target === 'low') {
-        if (rand < 0.70) return 'low';
-        if (rand < 0.90) return 'medium';
+        if (rand < 0.60) return 'low';
+        if (rand < 0.75) return 'medium';
         return 'high';
     } else if (target === 'medium') {
-        if (rand < 0.20) return 'low';
-        if (rand < 0.70) return 'medium';
+        if (rand < 0.10) return 'low';
+        if (rand < 0.50) return 'medium';
         return 'high';
     } else { // high
         if (rand < 0.05) return 'low';
-        if (rand < 0.30) return 'medium';
+        if (rand < 0.20) return 'medium';
         return 'high';
     }
 }
@@ -489,8 +622,8 @@ function applyBiasedTraffic(targetLevel) {
             const key = fromId < edge.to ? `${fromId}-${edge.to}` : `${edge.to}-${fromId}`;
             if (!drawnEdges.has(key)) {
                 drawnEdges.add(key);
-                // Each edge independently samples a level biased toward target
-                graph.setTraffic(fromId, edge.to, sampleTrafficLevel(targetLevel));
+                // Apply the exact selected traffic level to all edges uniformly
+                graph.setTraffic(fromId, edge.to, targetLevel);
             }
         }
     }
@@ -524,6 +657,8 @@ function randomizeTraffic() {
 }
 
 function resetAll() {
+    travelRunId++;
+    travelInProgress = false;
     lastResult = null;
     sourceSelect.value = '';
     destSelect.value = '';
@@ -546,6 +681,11 @@ function resetAll() {
     canvasHint.classList.remove('hidden');
     resultsEmpty.classList.remove('hidden');
     resultsContent.classList.add('hidden');
+    clearTravelStatus();
+    travelModeBtn.disabled = false;
+    findRouteBtn.disabled = false;
+    randomTrafficBtn.disabled = false;
+    resetBtn.disabled = false;
     showToast('↺ Everything reset!');
 }
 
@@ -644,6 +784,7 @@ function spawnParticles() {
 // ─────────────────────────────────────────────────
 function setupEventListeners() {
     findRouteBtn.addEventListener('click', findRoute);
+    travelModeBtn.addEventListener('click', startTravelMode);
     randomTrafficBtn.addEventListener('click', randomizeTraffic);
     resetBtn.addEventListener('click', resetAll);
 
